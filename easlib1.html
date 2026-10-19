@@ -1,0 +1,283 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EasLib</title>
+
+    <style>
+        body {
+            background: #050B1A;
+            color: white;
+            font-family: Arial;
+            padding: 20px;
+        }
+
+        h1, h2 {
+            color: #A78BFA;
+        }
+
+        .box {
+            background: #0D1830;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+
+        input {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #293B5C;
+            border-radius: 5px;
+            background: #172544;
+            color: white;
+        }
+
+        input[type="button"] {
+            background: #7C3AED;
+            cursor: pointer;
+        }
+
+        input[type="button"]:hover {
+            background: #2563EB;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #0D1830;
+        }
+
+        th, td {
+            border: 1px solid #293B5C;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #172544;
+            color: #A78BFA;
+        }
+
+        .search {
+            width: 90%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>EasLib</h1>
+    <p>Easy Accessible Library Management System</p>
+
+    <div class="box">
+        <h2>Borrowing Record</h2>
+
+        <p>Student ID:</p>
+        <input type="text" id="id" placeholder="Student ID">
+
+        <p>Student Name:</p>
+        <input type="text" id="name" placeholder="Student Name">
+
+        <p>Section:</p>
+        <input type="text" id="section" placeholder="Section">
+
+        <p>Book Title:</p>
+        <input type="text" id="book" placeholder="Book Title">
+
+        <p>Author:</p>
+        <input type="text" id="author" placeholder="Author">
+
+        <p>Date Borrowed:</p>
+        <input type="date" id="borrowdate">
+
+        <p>Due Date:</p>
+        <input type="date" id="duedate">
+
+        <br><br>
+
+        <input type="button" value="Add Record" onclick="addrecord()">
+        <input type="button" value="Update" onclick="updaterecord()">
+        <input type="button" value="Clear" onclick="clearform()">
+
+        <p id="output"></p>
+    </div>
+
+    <div class="box">
+        <h2>Library Records</h2>
+
+        <input class="search" type="text" id="search"
+        placeholder="Search student or book..." onkeyup="displayRecords()">
+
+        <br><br>
+
+        <table>
+            <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Section</th>
+                <th>Book</th>
+                <th>Author</th>
+                <th>Borrowed</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+
+            <tbody id="recordtable"></tbody>
+        </table>
+    </div>
+
+    <script>
+        var records = JSON.parse(localStorage.getItem("easlib")) || [];
+        var selected = -1;
+
+        displayRecords();
+
+        function addrecord() {
+            var id = document.getElementById("id").value;
+            var name = document.getElementById("name").value;
+            var section = document.getElementById("section").value;
+            var book = document.getElementById("book").value;
+            var author = document.getElementById("author").value;
+            var borrowdate = document.getElementById("borrowdate").value;
+            var duedate = document.getElementById("duedate").value;
+
+            if (id == "" || name == "" || section == "" ||
+                book == "" || author == "" ||
+                borrowdate == "" || duedate == "") {
+                alert("Please complete all fields.");
+                return;
+            }
+
+            if (duedate < borrowdate) {
+                alert("Invalid due date.");
+                return;
+            }
+
+            records.push({
+                id: id,
+                name: name,
+                section: section,
+                book: book,
+                author: author,
+                borrowdate: borrowdate,
+                duedate: duedate,
+                status: "Borrowed"
+            });
+
+            localStorage.setItem("easlib", JSON.stringify(records));
+
+            document.getElementById("output").innerHTML =
+                "Record added successfully!";
+
+            displayRecords();
+            clearform();
+        }
+
+        function displayRecords() {
+            var table = "";
+            var search = document.getElementById("search").value.toLowerCase();
+
+            for (var i = 0; i < records.length; i++) {
+                var status = records[i].status;
+
+                if (status != "Returned" &&
+                    records[i].duedate < new Date().toLocaleDateString("en-CA")) {
+                    status = "Overdue";
+                }
+
+                if (
+                    records[i].id.toLowerCase().includes(search) ||
+                    records[i].name.toLowerCase().includes(search) ||
+                    records[i].book.toLowerCase().includes(search)
+                ) {
+                    table += "<tr>";
+                    table += "<td>" + records[i].id + "</td>";
+                    table += "<td>" + records[i].name + "</td>";
+                    table += "<td>" + records[i].section + "</td>";
+                    table += "<td>" + records[i].book + "</td>";
+                    table += "<td>" + records[i].author + "</td>";
+                    table += "<td>" + records[i].borrowdate + "</td>";
+                    table += "<td>" + records[i].duedate + "</td>";
+                    table += "<td>" + status + "</td>";
+
+                    table += "<td>";
+                    table += "<input type='button' value='Edit' onclick='editrecord(" + i + ")'>";
+                    table += "<input type='button' value='Return' onclick='returnbook(" + i + ")'>";
+                    table += "<input type='button' value='Delete' onclick='deleterecord(" + i + ")'>";
+                    table += "</td>";
+
+                    table += "</tr>";
+                }
+            }
+
+            document.getElementById("recordtable").innerHTML = table;
+        }
+
+        function editrecord(index) {
+            selected = index;
+
+            document.getElementById("id").value = records[index].id;
+            document.getElementById("name").value = records[index].name;
+            document.getElementById("section").value = records[index].section;
+            document.getElementById("book").value = records[index].book;
+            document.getElementById("author").value = records[index].author;
+            document.getElementById("borrowdate").value = records[index].borrowdate;
+            document.getElementById("duedate").value = records[index].duedate;
+        }
+
+        function updaterecord() {
+            if (selected == -1) {
+                alert("Click Edit first.");
+                return;
+            }
+
+            records[selected].id = document.getElementById("id").value;
+            records[selected].name = document.getElementById("name").value;
+            records[selected].section = document.getElementById("section").value;
+            records[selected].book = document.getElementById("book").value;
+            records[selected].author = document.getElementById("author").value;
+            records[selected].borrowdate = document.getElementById("borrowdate").value;
+            records[selected].duedate = document.getElementById("duedate").value;
+
+            localStorage.setItem("easlib", JSON.stringify(records));
+
+            document.getElementById("output").innerHTML =
+                "Record updated successfully!";
+
+            displayRecords();
+            clearform();
+        }
+
+        function returnbook(index) {
+            records[index].status = "Returned";
+
+            localStorage.setItem("easlib", JSON.stringify(records));
+            displayRecords();
+        }
+
+        function deleterecord(index) {
+            if (confirm("Delete this record?")) {
+                records.splice(index, 1);
+
+                localStorage.setItem("easlib", JSON.stringify(records));
+                displayRecords();
+                clearform();
+            }
+        }
+
+        function clearform() {
+            document.getElementById("id").value = "";
+            document.getElementById("name").value = "";
+            document.getElementById("section").value = "";
+            document.getElementById("book").value = "";
+            document.getElementById("author").value = "";
+            document.getElementById("borrowdate").value = "";
+            document.getElementById("duedate").value = "";
+
+            selected = -1;
+        }
+    </script>
+
+</body>
+</html>
